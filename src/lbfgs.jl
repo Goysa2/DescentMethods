@@ -13,12 +13,11 @@ Outputs:
     - An NLPAtX, so all the information of the last iterate
     - A boolean true if we reahced an optimal solution, false otherwise
 """
-function Newlbfgs(nlp :: AbstractNLPModel,
-                  nlp_stop :: NLPStopping;
-                  linesearch :: Function = TR_Nwt_ls,
-                  verbose   :: Bool=false,
-                  verboseLS :: Bool = false,
-                  mem       :: Int=5,
+function Newlbfgs(nlp         :: AbstractNLPModel,
+                  nlp_stop    :: NLPStopping;
+                  linesearch  :: Function = TR_Nwt_ls,
+                  verbose     :: Bool=false,
+                  mem         :: Int=5,
                   kwargs...)
 
     nlp_at_x = nlp_stop.current_state
