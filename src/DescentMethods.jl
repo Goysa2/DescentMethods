@@ -15,6 +15,9 @@ include("NewtonSpectralAbs.jl")
 
 include("lbfgs.jl")
 
+include("shamanskii-m.jl")
+
+
 
 
 end # module

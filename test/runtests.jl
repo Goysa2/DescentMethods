@@ -14,16 +14,17 @@ using LineSearch
 using DescentMethods
 
 
-nlp = CUTEstModel("ARWHEAD")
+# nlp = CUTEstModel("ARWHEAD")
 
-solvers = [:Newton, :NewtonLDLtAbs, :NewtonSpectralAbs, :Newlbfgs]
-solvers = [:Newton, :Newlbfgs]
+# solvers = [:Newton, :NewtonLDLtAbs, :NewtonSpectralAbs, :Newlbfgs]
+solvers = [:Shamanskii, :Newton, :Newlbfgs]
+
 for solver in solvers
+    nlp = CUTEstModel("ARWHEAD")
     println("$(String(solver))")
     nlpatx = NLPAtX(nlp.meta.x0)
     nlpstop = NLPStopping(nlp, Stopping.unconstrained, nlpatx)
 
     final_nlp_at_x, optimal = eval(solver)(nlp, nlpstop, verbose = true)
-
-    @test optimal
+    finalize(nlp)
 end
