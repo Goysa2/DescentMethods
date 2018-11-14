@@ -5,3 +5,5 @@ State
 Stopping
 LineSearch
 Printf
+LinearAlgebra
+LinearOperators

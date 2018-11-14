@@ -3,6 +3,8 @@ module DescentMethods
 using Compat, Printf
 using NLPModels
 using State, Stopping, LineSearch
+using LinearAlgebra
+using LinearOperators
 
 include("HessianDense.jl")
 include("HessianOp.jl")
