@@ -52,7 +52,7 @@ function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Fl
 
     # Initial state.
     # x = zeros(n)
-    z = zero(a)
+    z = zero(n)
     x̂ = copy(x)
 
     γ = dot(b, b);
