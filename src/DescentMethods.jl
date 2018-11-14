@@ -5,6 +5,7 @@ using NLPModels
 using State, Stopping, LineSearch
 using LinearAlgebra
 using LinearOperators
+using SparseArrays
 
 include("HessianDense.jl")
 include("HessianOp.jl")

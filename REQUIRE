@@ -7,3 +7,4 @@ LineSearch
 Printf
 LinearAlgebra
 LinearOperators
+SparseArrays
