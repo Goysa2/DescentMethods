@@ -1,5 +1,6 @@
 module DescentMethods
 
+using Compat, Printf
 using NLPModels
 using State, Stopping, LineSearch
 

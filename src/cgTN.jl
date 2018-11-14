@@ -6,7 +6,7 @@ using LinearOperators
 @compat abstract type KrylovStats end;
 
 "Type for statistics returned by non-Lanczos solvers"
-type SimpleStats <: KrylovStats
+mutable struct SimpleStats <: KrylovStats
   solved :: Bool
   inconsistent :: Bool
   residuals :: Array{Float64,1}
@@ -32,8 +32,6 @@ equivalent to the usual implementation. A must be symmetric to define a quadrati
 q(x) = 0.5*x'*A*x - b'*x
 
   JPD february 09 2017, Montréal"""
-# Methods for various argument types.
-#include("cg_methods.jl")
 cgTN{TA <: Number, Tb <: Number}(A :: Array{TA,2}, b :: Array{Tb,1};
                                atol :: Float64=1.0e-8, rtol :: Float64=1.0e-6, itmax :: Int=0, verbose :: Bool=false) =
   cgTN(LinearOperator(A), b, atol=atol, rtol=rtol, itmax=itmax, verbose=verbose);
