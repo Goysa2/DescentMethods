@@ -32,7 +32,6 @@ equivalent to the usual implementation. A must be symmetric to define a quadrati
 q(x) = 0.5*x'*A*x - b'*x
 
   JPD february 09 2017, Montréal"""
-                            atol :: Float64=1.0e-8, rtol :: Float64=1.0e-6, itmax :: Int=0, verbose :: Bool=false) =
 cgTN(A::Array{TA, 2}, b::Array{Tb, 1}; atol::Float64 = 1e-08, rtol::Float64 = 1e-06, itmax::Int = 0, verbose::Bool = false) where {TA <: Number, Tb <: Number} =
   cgTN(LinearOperator(A), b, atol=atol, rtol=rtol, itmax=itmax, verbose=verbose);
 
