@@ -39,7 +39,8 @@ function Newlbfgs(nlp         :: AbstractNLPModel,
     verbose && @printf("%4d  %8.1e  %7.1e", iter, f, ∇fNorm)
 
 
-    d = zeros(nlp_at_x.gx)
+    # d = zeros(nlp_at_x.gx)
+    d = zero(nlp_at_x.gx)
     h = LineModel(nlp, x, d)
 
     while !OK

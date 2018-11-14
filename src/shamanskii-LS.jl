@@ -31,7 +31,7 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
 
     # xt = Array{Float64}(n)
     xt = copy(nlp.meta.x0)
-    ∇ft = Array{Float64}(n)
+    ∇ft = Array{Float64}(undef, n)
 
     f = obj(nlp, x)
     ∇f = grad(nlp, x)
@@ -51,7 +51,8 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
     verbose && @printf("%4s  %8s  %7s  %8s  \n", " iter", "f", "‖∇f‖", "∇f'd")
     verbose && @printf("%5d  %9.2e  %8.1e", iter, nlp_at_x.fx, ∇fNorm)
     β = 0.0
-    d = zeros(nlp_at_x.gx)
+    # d = zeros(nlp_at_x.gx)
+    d = zero(nlp_at_x.gx)
     scale = 1.0
 
     h = LineModel(nlp, x, d)

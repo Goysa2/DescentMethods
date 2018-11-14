@@ -32,14 +32,10 @@ equivalent to the usual implementation. A must be symmetric to define a quadrati
 q(x) = 0.5*x'*A*x - b'*x
 
   JPD february 09 2017, Montréal"""
-# cgTN{TA <: Number, Tb <: Number}(A :: Array{TA,2}, b :: Array{Tb,1};
-#                                atol :: Float64=1.0e-8, rtol :: Float64=1.0e-6, itmax :: Int=0, verbose :: Bool=false) =
+                            atol :: Float64=1.0e-8, rtol :: Float64=1.0e-6, itmax :: Int=0, verbose :: Bool=false) =
 cgTN(A::Array{TA, 2}, b::Array{Tb, 1}; atol::Float64 = 1e-08, rtol::Float64 = 1e-06, itmax::Int = 0, verbose::Bool = false) where {TA <: Number, Tb <: Number} =
   cgTN(LinearOperator(A), b, atol=atol, rtol=rtol, itmax=itmax, verbose=verbose);
 
-# cgTN{TA <: Number, Tb <: Number, IA <: Integer}(A :: SparseMatrixCSC{TA,IA}, b :: Array{Tb,1};
-#                                               atol :: Float64=1.0e-8, rtol ::
-#                                               Float64=1.0e-6, itmax :: Int=0,  verbose :: Bool=false) =
 cgTN(A::SparseMatrixCSC{TA, IA}, b::Array{Tb, 1}; atol::Float64 = 1e-08, rtol::Float64 = 1e-06, itmax::Int = 0, verbose::Bool = false) where {TA <: Number, Tb <: Number, IA <: Integer} =
   cgTN(LinearOperator(A), b, atol=atol, rtol=rtol, itmax=itmax, verbose=verbose);
 
@@ -49,10 +45,6 @@ cgTN(A::SparseMatrixCSC{TA, IA}, b::Array{Tb, 1}; atol::Float64 = 1e-08, rtol::F
 The method does _not_ abort if A is not definite.
 """
 function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Float64 = 1e-06, itmax::Int = 0, verbose::Bool = false) where T <: Real
-# function cgTN{T <: Real}(A :: LinearOperator, b :: Array{T,1};
-#                          atol :: Float64=1.0e-8, rtol :: Float64=1.0e-6, itmax :: Int=0,
-#                          verbose :: Bool=false)
-
     n = size(b, 1);
     (size(A, 1) == n & size(A, 2) == n) || error("Inconsistent problem size");
     #isequal(triu(A)',tril(A)) || error("Must supply Hermitian matrix")
@@ -60,7 +52,8 @@ function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Fl
     verbose && @printf("CG: system of %d equations in %d variables\n", n, n);
 
     # Initial state.
-    x = zeros(n)
+    # x = zeros(n)
+    z = zero(a)
     x̂ = copy(x)
 
     γ = dot(b, b);
