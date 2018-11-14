@@ -88,8 +88,10 @@ function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Fl
         return (p, stats);
     else
         α = γ / pAp;
-        BLAS.axpy!(n,  α,  p, 1, x, 1);  # Faster than x = x + σ * p;
-        BLAS.axpy!(n, -α, Ap, 1, r, 1);  # Faster than r = r - α * Ap;
+        # BLAS.axpy!(n,  α,  p, 1, x, 1);  # Faster than x = x + σ * p;
+        @. x = x + σ * p;
+        # BLAS.axpy!(n, -α, Ap, 1, r, 1);  # Faster than r = r - α * Ap;
+        @. r = r - α * Ap;
         γ_next = BLAS.dot(n, r, 1, r, 1);
         rNorm = sqrt(γ);
         push!(rNorms, rNorm);
@@ -101,7 +103,8 @@ function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Fl
             β = γ_next / γ;
             γ = γ_next;
             BLAS.scal!(n, β, p, 1)
-            BLAS.axpy!(n, 1.0, r, 1, p, 1);  # Faster than p = r + β * p;
+            # BLAS.axpy!(n, 1.0, r, 1, p, 1);  # Faster than p = r + β * p;
+            @. p = r + Β * n
         end
         iter = iter + 1;
     end
@@ -123,8 +126,10 @@ function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Fl
             verbose &&println("negative curvature encountered ",iter," CG iterations.")
         else
             verbose && @printf("    %8.1e  %7.1e  %7.1e\n", pAp, α, σ);
-            BLAS.axpy!(n,  α,  p, 1, x, 1);  # Faster than x = x + σ * p;
-            BLAS.axpy!(n, -α, Ap, 1, r, 1);  # Faster than r = r - α * Ap;
+            # BLAS.axpy!(n,  α,  p, 1, x, 1);  # Faster than x = x + σ * p;
+            @. x = x + σ * p;
+            # BLAS.axpy!(n, -α, Ap, 1, r, 1);  # Faster than r = r - α * Ap;
+            @. r = r - α * Ap;
             γ_next = BLAS.dot(n, r, 1, r, 1);
             rNorm = sqrt(γ);
             push!(rNorms, rNorm);
@@ -137,7 +142,8 @@ function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Fl
             β = γ_next / γ;
             γ = γ_next;
             BLAS.scal!(n, β, p, 1)
-            BLAS.axpy!(n, 1.0, r, 1, p, 1);  # Faster than p = r + β * p;
+            # BLAS.axpy!(n, 1.0, r, 1, p, 1);  # Faster than p = r + β * p;
+            @. p = r + β * p;
         end
         iter = iter + 1;
         verbose && @printf("%5d  %8.1e ", iter, rNorm);
