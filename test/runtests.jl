@@ -13,10 +13,6 @@ using Stopping
 using LineSearch
 using DescentMethods
 
-
-# nlp = CUTEstModel("ARWHEAD")
-
-# solvers = [:Newton, :NewtonLDLtAbs, :NewtonSpectralAbs, :Newlbfgs]
 solvers = [:Shamanskii, :Newton, :Newlbfgs]
 
 for solver in solvers

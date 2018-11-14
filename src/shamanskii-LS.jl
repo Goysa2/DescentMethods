@@ -1,29 +1,32 @@
-export Newton
+export Shamanskii_LS
 
+# TODO: s'assurer que LDLt (Cholesky fonctionne) pour Newton, sinon
+#       on ne peut pas utiliser le critère pour déterminer si la "hessienne"
+#       est adéquate ou non
 """
-A globalized Newton algorithm with Line Search
-Inputs:
-    - An AbstractNLPModel (our problem)
-    - An NLPStopping (stopping fonctions/criterion of our problem)
-    - (opt) verbose = true will show function value, norm of gradient and the
-        inner product of the gradient and the descent direction
-    - (opt) hessian_rep, different way to implement the Hessian. The default
-        way is a LinearOperator
-Outputs:
-    - An NLPAtX, so all the information of the last iterate
-    - A boolean true if we reahced an optimal solution, false otherwise
+A globalized Shamanskii algorithm with Line Search.
+This code is an implementation of the idea presented in:
+
+    Global Convergence Technique for the Newton
+        Method with Periodic Hessian Evaluation
+
+By F. LAMPARIELLO and M. SCIANDRONE
+
+JOURNAL OF OPTIMIZATION THEORY AND APPLICATIONS:
+Vol. 111, No. 2, pp. 341–358, November 2001
 """
-function Newton(nlp            :: AbstractNLPModel,
-                 nlp_stop       :: NLPStopping;
-                 linesearch     :: Function = TR_Nwt_ls,
-                 verbose        :: Bool = false,
-                 Nwtdirection   :: Function = NwtdirectionCG,
-                 hessian_rep    :: Function = hessian_operator,
-                 kwargs...)
+function Shamanskii_LS(nlp            :: AbstractNLPModel,
+                       nlp_stop       :: NLPStopping;
+                       linesearch     :: Function = TR_Nwt_ls,
+                       verbose        :: Bool = false,
+                       Nwtdirection   :: Function = NwtdirectionCG,
+                       hessian_rep    :: Function = hessian_operator,
+                       mem            :: Int = 2,
+                       kwargs...)
 
     nlp_at_x = nlp_stop.current_state
 
-    x = copy(nlp.meta.x0)
+    x = copy(nlp.meta.x0) # our x₀
     n = nlp.meta.nvar
 
     # xt = Array{Float64}(n)
@@ -32,12 +35,18 @@ function Newton(nlp            :: AbstractNLPModel,
 
     f = obj(nlp, x)
     ∇f = grad(nlp, x)
-    # update!(nlp_at_x, x = x, fx = f, gx = ∇f, g0 = ∇f)
-    OK = update_and_start!(nlp_stop, x = x, fx = f, gx = ∇f, g0 = ∇f)
-    ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
-    !OK && update!(nlp_at_x, Hx = hessian_rep(nlp, x))
 
+    # Step 0 of the algorithm, initialize some parameters
     iter = 0
+    k = 0
+    u = 0
+
+    # Step 1 of the algorithm, we check if the initial point is stationnary
+    OK = update_and_start!(nlp_stop, x = x, fx = f, gx = ∇f, g0 = ∇f)
+
+
+    ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
+    update!(nlp_at_x, Hx = hessian_rep(nlp, x))
 
     verbose && @printf("%4s  %8s  %7s  %8s  \n", " iter", "f", "‖∇f‖", "∇f'd")
     verbose && @printf("%5d  %9.2e  %8.1e", iter, nlp_at_x.fx, ∇fNorm)
@@ -74,7 +83,15 @@ function Newton(nlp            :: AbstractNLPModel,
         β = (∇ft⋅y) / (∇f⋅∇f)
         # x = xt
         # f = ft
-        OK = update_and_stop!(nlp_stop, x = xt, fx = ft, Hx = hessian_rep(nlp, xt))
+
+        # the only thing that differs from a globalized Newton with linesearch
+        if rem(nlp_stop.meta.nb_of_stop, mem) == 0
+            Ht = hessian_rep(nlp, xt)
+            OK = update_and_stop!(nlp_stop, x = xt, fx = ft, Hx = Ht)
+        else
+            OK = update_and_stop!(nlp_stop, x = xt, fx = ft)
+        end
+        # OK = update_and_stop!(nlp_stop, x = xt, fx = ft, Hx = Ht)
         # H = hessian_rep(nlp,x)
 
         BLAS.blascopy!(n, ∇ft, 1, nlp_at_x.gx, 1)
