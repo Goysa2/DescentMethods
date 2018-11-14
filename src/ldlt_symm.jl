@@ -44,7 +44,7 @@ function  ldlt_symm(A0 :: Array{Float64,2}, piv :: Char='r')
 
     # minimal checks for conforming inputs
     isequal(triu(A)',tril(A)) || error("Must supply Hermitian matrix.")
-    piv in ['p','r'] || error("Pivoting must be "'p'" or "'r'".")
+    piv in ['p','r'] || error("Pivoting must be 'p' or 'r'.")
 
     n, = size(A)
 
