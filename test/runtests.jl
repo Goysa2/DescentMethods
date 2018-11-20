@@ -13,7 +13,7 @@ using Stopping
 using LineSearch
 using DescentMethods
 
-solvers = [:Shamanskii, :Newton, :Newlbfgs]
+solvers = [:Newton, :Newlbfgs, :Shamanskii]
 
 for solver in solvers
     nlp = CUTEstModel("ARWHEAD")
