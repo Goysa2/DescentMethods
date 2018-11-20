@@ -70,6 +70,7 @@ function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Fl
     rNorms = [rNorm;];
     printstyled("on a rNorms = $rNorms \n", color = :green)
     ε = atol + rtol * rNorm;
+    printstyled("on a ε = $ε \n", color = :green)
     verbose && @printf("%5d  %8.1e ", iter, rNorm)
 
     solved = rNorm <= ε;
