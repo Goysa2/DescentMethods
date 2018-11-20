@@ -66,7 +66,9 @@ function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Fl
     itmax == 0 && (itmax = 2 * n);
 
     rNorm = sqrt(γ);
+    printstyled("on a rNorm = $rNorm \n", color = :green)
     rNorms = [rNorm;];
+    printstyled("on a rNorms = $rNorms \n", color = :green)
     ε = atol + rtol * rNorm;
     verbose && @printf("%5d  %8.1e ", iter, rNorm)
 
