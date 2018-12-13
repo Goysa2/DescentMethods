@@ -6,7 +6,8 @@ else
 end
 
 using NLPModels, CUTEst
-using LinearOperators
+using LinearOperators, LinearAlgebra
+using Krylov
 
 using State
 using Stopping
@@ -22,5 +23,6 @@ for solver in solvers
     nlpstop = NLPStopping(nlp, Stopping.unconstrained, nlpatx)
 
     final_nlp_at_x, optimal = eval(solver)(nlp, nlpstop, verbose = true)
+    println("status = $(string(optimal))")
     finalize(nlp)
 end
