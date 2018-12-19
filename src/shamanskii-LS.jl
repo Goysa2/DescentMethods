@@ -1,8 +1,5 @@
 export Shamanskii_LS
 
-# TODO: s'assurer que LDLt (Cholesky fonctionne) pour Newton, sinon
-#       on ne peut pas utiliser le critère pour déterminer si la "hessienne"
-#       est adéquate ou non
 """
 A globalized Shamanskii algorithm with Line Search.
 This code is an implementation of the idea presented in:
@@ -17,12 +14,18 @@ Vol. 111, No. 2, pp. 341–358, November 2001
 """
 function Shamanskii_LS(nlp            :: AbstractNLPModel,
                        nlp_stop       :: NLPStopping;
-                       linesearch     :: Function = TR_Nwt_ls,
+                       linesearch     :: Function = shamanskii_line_search,
                        verbose        :: Bool = false,
-                       Nwtdirection   :: Function = NwtdirectionCG,
-                       hessian_rep    :: Function = hessian_operator,
+                       Nwtdirection   :: Function = NwtdirectionLDLT,
+                       hessian_rep    :: Function = hessian_dense,
                        mem            :: Int = 2,
                        kwargs...)
+
+    # Data of the algorithm
+    η = 1.5 # η > 1
+    cₐ = 0.1 # cₐ ∈ (0, 1]
+    c𝐟 = 0.25 # c𝐟 ∈ (0, 1)
+    p = 10 # p > 1
 
     nlp_at_x = nlp_stop.current_state
 
@@ -34,31 +37,57 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
     ∇ft = Array{Float64}(undef, n)
 
     f = obj(nlp, x)
-    ∇f = grad(nlp, x)
+    fₖ₋₁ = f
+    ∇fₖ = grad(nlp, x)
 
+    # Initiliazation to avoir scope issues
+    Hₖ = nothing; Hₖ₋₁ = nothing; approx_Hₖ = nothing; approx_Hₖ₋₁ = nothing;
     # Step 0 of the algorithm, initialize some parameters
-    iter = 0
-    k = 0
-    u = 0
+    k = 0; i = 0; u = 0
 
     # Step 1 of the algorithm, we check if the initial point is stationnary
-    OK = update_and_start!(nlp_stop, x = x, fx = f, gx = ∇f, g0 = ∇f)
+    OK = update_and_start!(nlp_stop, x = x, fx = f, gx = ∇fₖ, g0 = ∇fₖ)
 
 
     ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
-    update!(nlp_at_x, Hx = hessian_rep(nlp, x))
+    # update!(nlp_at_x, Hx = hessian_rep(nlp, x))
+    # Hₖ₋₁ = nlp_at_x.Hx
 
-    verbose && @printf("%4s  %8s  %7s  %8s  \n", " iter", "f", "‖∇f‖", "∇f'd")
-    verbose && @printf("%5d  %9.2e  %8.1e", iter, nlp_at_x.fx, ∇fNorm)
-    β = 0.0
-    # d = zeros(nlp_at_x.gx)
-    d = zero(nlp_at_x.gx)
-    scale = 1.0
+    verbose && @printf("%4s  %8s  %7s  %8s  \n", " k", "f", "‖∇f‖", "∇f'd")
+    verbose && @printf("%5d  %9.2e  %8.1e", k, nlp_at_x.fx, ∇fNorm)
+
+    d = fill(0.0, size(nlp_at_x.gx)[1])
+
 
     h = LineModel(nlp, x, d)
 
+    # Step 1 : We check if we have a stationnary point
     while !OK
-        d = Nwtdirection(nlp_at_x.Hx, nlp_at_x.gx, verbose = false)
+        # Step 2 : We compute the exact hessian
+        if (k == i * p) || (u == 1)   # (k != i * p) && (u == 0)
+            # Compute Hₖ and construct its positive definite approximation
+            # by applying the modified Cholesky factorization. Then u = 0 or
+            # u = 1 depending on wheter or not ̂Hₖ is to different fom Hₖ.
+            Hₖ = hessian_rep(nlp, x)
+            approx_Hₖ = ldl(Hₖ)
+            good_hess_approx = hess_approx(Hₖ, approx_Hₖ, η)
+            if good_hess_approx
+                u = 1
+            else
+                u = 0
+            end
+
+            if (k == i * p)
+                i += 1
+            end
+        end
+
+        # Step 3 : ???
+        # ̂Hₖ = ̂Hₖ₋₁
+
+        # Step 4: compute the descent direction and xₖ₊₁
+        # d = Nwtdirection(nlp_at_x.Hx, nlp_at_x.gx, verbose = false)
+        d = approx_Hₖ \ -nlp_at_x.gx
         slope = BLAS.dot(n, d, 1, nlp_at_x.gx, 1)
 
         verbose && @printf("  %8.1e", slope)
@@ -66,42 +95,34 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
         h = redirect!(h, xt, d)
 
         ls_at_t = LSAtT(0.0, h₀ = nlp_at_x.fx, g₀ = slope)
-        stop_ls = LS_Stopping(h, (x, y) -> armijo(x, y, τ₀ = 0.01), ls_at_t)
+        stop_ls = LS_Stopping(h, (x, y) -> shamanskii_stop(x, y), ls_at_t)
         verbose && println(" ")
         ls_at_t, good_step_size = linesearch(h, stop_ls, LS_Function_Meta())
         good_step_size || (nlp_stop.meta.stalled_linesearch = true)
 
-        xt = nlp_at_x.x + ls_at_t.x * d
-        ft = obj(nlp, xt); ∇ft = grad(nlp, xt)
+        αₖ = ls_at_t.x
 
-        BLAS.blascopy!(n, nlp_at_x.x, 1, xt, 1)
-        BLAS.axpy!(n, ls_at_t.x, d, 1, xt, 1) #BLAS.axpy!(n, t, d, 1, xt, 1)
-        ∇ft = grad!(nlp, xt, ∇ft)
+        xₖ = nlp_at_x.x + αₖ * d
+        fₖ = obj(nlp, xt); ∇fₖ = grad(nlp, xₖ)
 
-        # Move on.
-        s = xt - nlp_at_x.x
-        y = ∇ft - ∇f
-        β = (∇ft⋅y) / (∇f⋅∇f)
-        # x = xt
-        # f = ft
+        BLAS.blascopy!(n, nlp_at_x.x, 1, xₖ, 1)
+        BLAS.axpy!(n, ls_at_t.x, d, 1, xₖ, 1) #BLAS.axpy!(n, t, d, 1, xt, 1)
+        ∇ft = grad!(nlp, xₖ, ∇fₖ)
 
-        # the only thing that differs from a globalized Newton with linesearch
-        if rem(nlp_stop.meta.nb_of_stop, mem) == 0
-            Ht = hessian_rep(nlp, xt)
-            OK = update_and_stop!(nlp_stop, x = xt, fx = ft, Hx = Ht)
-        else
-            OK = update_and_stop!(nlp_stop, x = xt, fx = ft)
+        # Step 5: We update the value of u
+        if (αₖ >= cₐ) || (((fₖ - fₖ₋₁)/abs(fₖ)) >= c𝐟)
+            u = 0
         end
-        # OK = update_and_stop!(nlp_stop, x = xt, fx = ft, Hx = Ht)
-        # H = hessian_rep(nlp,x)
 
+
+        OK = update_and_stop!(nlp_stop, x = xₖ, fx = fₖ)
         BLAS.blascopy!(n, ∇ft, 1, nlp_at_x.gx, 1)
 
         # norm(∇f) bug: https://github.com/JuliaLang/julia/issues/11788
         ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
-        iter = iter + 1
+        k = k + 1
 
-        verbose && @printf("%4d  %9.2e  %8.1e ", iter, nlp_at_x.fx, ∇fNorm)
+        verbose && @printf("%4d  %9.2e  %8.1e ", k, nlp_at_x.fx, ∇fNorm)
 
     end
 
