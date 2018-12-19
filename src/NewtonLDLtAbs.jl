@@ -1,22 +1,33 @@
 export NwtdirectionLDLt, NewtonLDLtAbs
 
+# extremely slow compared to other way to compute Newton direction
+# probably bunchkaufman factorization or the computing of eigenvalues?
+
+
 """Computes the Newton direction using the LDLᵗ factorization"""
 function NwtdirectionLDLt(H,g;verbose::Bool=false)
-    L = Array{Float64}(2)
-    D = Array{Float64}(2)
-    pp = Array{Int}(1)
+    # L = Array{Float64}(2)
+    # D = Array{Float64}(2)
+    L = Array{Float64}(undef, 2)
+    D = Array{Float64}(undef, 2)
+    pp = Array{Int}(undef, 1)
     ρ = Float64
     ncomp = Int64
 
-    try
-        (L, D, pp, rho, ncomp) = ldlt_symm(H,'r')
-    catch
- 	println("*******   Problem in LDLt")
-        #res = PDataLDLt()
-        #res.OK = false
-        #return res
-        return (NaN, NaN, NaN, Inf, false, true, :fail)
-    end
+    # try
+    #     # (L, D, pp, rho, ncomp) = ldlt_symm(H,'r')
+    #     LBL = bunchkaufman(H)
+    # catch
+ 	# println("*******   Problem in LDLt")
+    #     #res = PDataLDLt()
+    #     #res.OK = false
+    #     #return res
+    #     return (NaN, NaN, NaN, Inf, false, true, :fail)
+    # end
+    LBL = bunchkaufman(Symmetric(H, :L))
+    D = LBL.D
+    L = LBL.L
+    pp = LBL.p
 
     # A[pp,pp] = P*A*P' =  L*D*L'
 
@@ -29,7 +40,8 @@ function NwtdirectionLDLt(H,g;verbose::Bool=false)
         return (NaN, NaN, NaN, Inf, false, true, :fail)
     end
 
-    Δ, Q = eig(D)
+    # Δ, Q = eig(D)
+    Δ, Q = eigen(SymTridiagonal(D))
 
     ϵ2 =  1.0e-8
     Γ = max.(abs.(Δ),ϵ2)
