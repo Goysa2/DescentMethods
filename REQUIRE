@@ -8,4 +8,5 @@ LineSearch
 Printf
 LinearAlgebra
 LinearOperators
+LDLFactorizations
 SparseArrays
