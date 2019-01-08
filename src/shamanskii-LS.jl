@@ -19,13 +19,17 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
                        Nwtdirection   :: Function = NwtdirectionLDLT,
                        hessian_rep    :: Function = hessian_dense,
                        mem            :: Int = 2,
+                       η              :: Float64 = 1.5, # η > 1
+                       cₐ             :: Float64 = 0.1, # cₐ ∈ (0, 1]
+                       c𝐟              :: Float64 = 0.25, # c𝐟 ∈ (0, 1)
+                       p              :: Int = 10, # p > 1
                        kwargs...)
 
     # Data of the algorithm
-    η = 1.5 # η > 1
-    cₐ = 0.1 # cₐ ∈ (0, 1]
-    c𝐟 = 0.25 # c𝐟 ∈ (0, 1)
-    p = 10 # p > 1
+    # η = 1.5 # η > 1
+    # cₐ = 0.1 # cₐ ∈ (0, 1]
+    # c𝐟 = 0.25 # c𝐟 ∈ (0, 1)
+    # p = 10 # p > 1
 
     nlp_at_x = nlp_stop.current_state
 
@@ -33,8 +37,8 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
     n = nlp.meta.nvar
 
     # xt = Array{Float64}(n)
-    xt = copy(nlp.meta.x0)
-    ∇ft = Array{Float64}(undef, n)
+    xₖ = copy(nlp.meta.x0)
+    ∇fₖ = Array{Float64}(undef, n)
 
     f = obj(nlp, x)
     fₖ₋₁ = f
@@ -62,21 +66,25 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
     h = LineModel(nlp, x, d)
 
     # Step 1 : We check if we have a stationnary point
-    while !OK
+    while !OK #k < 10
         # Step 2 : We compute the exact hessian
-        if (k == i * p) || (u == 1)   # (k != i * p) && (u == 0)
+        if (k == i * p) || (u == 1)   # !((k != i * p) && (u == 0))
             # Compute Hₖ and construct its positive definite approximation
             # by applying the modified Cholesky factorization. Then u = 0 or
             # u = 1 depending on wheter or not ̂Hₖ is to different fom Hₖ.
             Hₖ = hessian_rep(nlp, x)
             approx_Hₖ = ldl(Hₖ)
+            println("on check si on a une bonne approximation de la hessienne avec Cholesky modifié")
+            println("isposfed(Hₖ) = $(isposfed(Hₖ))")
             good_hess_approx = hess_approx(Hₖ, approx_Hₖ, η)
+            println("k = $k and good_hess_approx = $good_hess_approx")
             if good_hess_approx
-                u = 1
-            else
                 u = 0
+            else
+                u = 1
             end
 
+            println("i = $i and p = $p")
             if (k == i * p)
                 i += 1
             end
@@ -88,11 +96,12 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
         # Step 4: compute the descent direction and xₖ₊₁
         # d = Nwtdirection(nlp_at_x.Hx, nlp_at_x.gx, verbose = false)
         d = approx_Hₖ \ -nlp_at_x.gx
+
         slope = BLAS.dot(n, d, 1, nlp_at_x.gx, 1)
 
         verbose && @printf("  %8.1e", slope)
 
-        h = redirect!(h, xt, d)
+        h = redirect!(h, xₖ, d)
 
         ls_at_t = LSAtT(0.0, h₀ = nlp_at_x.fx, g₀ = slope)
         stop_ls = LS_Stopping(h, (x, y) -> shamanskii_stop(x, y), ls_at_t)
@@ -101,22 +110,25 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
         good_step_size || (nlp_stop.meta.stalled_linesearch = true)
 
         αₖ = ls_at_t.x
+        println("good_step_size = $good_step_size  and αₖ = $αₖ")
 
         xₖ = nlp_at_x.x + αₖ * d
-        fₖ = obj(nlp, xt); ∇fₖ = grad(nlp, xₖ)
+        fₖ = obj(nlp, xₖ); ∇fₖ = grad(nlp, xₖ)
 
         BLAS.blascopy!(n, nlp_at_x.x, 1, xₖ, 1)
         BLAS.axpy!(n, ls_at_t.x, d, 1, xₖ, 1) #BLAS.axpy!(n, t, d, 1, xt, 1)
-        ∇ft = grad!(nlp, xₖ, ∇fₖ)
+        ∇fₖ = grad!(nlp, xₖ, ∇fₖ)
 
         # Step 5: We update the value of u
         if (αₖ >= cₐ) || (((fₖ - fₖ₋₁)/abs(fₖ)) >= c𝐟)
+            println("on a modifié u")
             u = 0
+            # k = k + 1
         end
 
 
         OK = update_and_stop!(nlp_stop, x = xₖ, fx = fₖ)
-        BLAS.blascopy!(n, ∇ft, 1, nlp_at_x.gx, 1)
+        BLAS.blascopy!(n, ∇fₖ, 1, nlp_at_x.gx, 1)
 
         # norm(∇f) bug: https://github.com/JuliaLang/julia/issues/11788
         ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)

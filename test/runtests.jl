@@ -23,6 +23,6 @@ for solver in solvers
     nlpstop = NLPStopping(nlp, Stopping.unconstrained, nlpatx)
 
     final_nlp_at_x, optimal = eval(solver)(nlp, nlpstop, verbose = true)
-    println("status = $(string(optimal))")
+    println("optimal = $(string(optimal))")
     finalize(nlp)
 end
