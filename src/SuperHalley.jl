@@ -1,7 +1,9 @@
-export Newton
+export SuperHalley
 
 """
-A globalized Newton algorithm with Line Search
+A globalized Chebyshev algorithm with Line Search.
+Works exactly like a Newton algorithm with line search except here we use
+the Chebyshev algorithm.
 Inputs:
     - An AbstractNLPModel (our problem)
     - An NLPStopping (stopping fonctions/criterion of our problem)
@@ -13,26 +15,26 @@ Outputs:
     - An NLPAtX, so all the information of the last iterate
     - A boolean true if we reahced an optimal solution, false otherwise
 """
-function Newton(nlp             :: AbstractNLPModel,
-                 nlp_stop       :: NLPStopping;
-                 linesearch     :: Function = TR_Nwt_ls,
-                 verbose        :: Bool = false,
-                 Nwtdirection   :: Function = NwtdirectionCG,
-                 hessian_rep    :: Function = hessian_operator,
-                 kwargs...)
+function SuperHalley(nlp            :: AbstractNLPModel,
+                     nlp_stop       :: NLPStopping;
+                     linesearch     :: Function = one_step_size,
+                     verbose        :: Bool = false,
+                     Nwtdirection   :: Function = NwtdirectionCG,
+                     SHaldirection  :: Function = SHalley_dir_AD,
+                     hessian_rep    :: Function = hessian_operator,
+                     kwargs...)
 
+    fx = nlp.f
     nlp_at_x = nlp_stop.current_state
 
     n = nlp.meta.nvar
 
-    # xt = Array{Float64}(n)
     xt = copy(nlp.meta.x0)
     ∇ft = Array{Float64}(undef, n)
 
     f = obj(nlp, xt)
     ∇f = grad(nlp, xt)
     OK = update_and_start!(nlp_stop, x = xt, fx = f, gx = ∇f, g0 = ∇f)
-    # ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
     ∇fNorm = norm(nlp_at_x.gx)
     !OK && update!(nlp_at_x, Hx = hessian_rep(nlp, xt))
 
@@ -41,17 +43,13 @@ function Newton(nlp             :: AbstractNLPModel,
     verbose && @printf("%4s  %8s  %7s  %8s \n", " iter", "f", "‖∇f‖", "α")
     verbose && @printf("%5d  %9.2e  %8.1e", iter, nlp_at_x.fx, ∇fNorm)
     β = 0.0
-    # d = zeros(nlp_at_x.gx)
     d = zero(nlp_at_x.gx)
 
     h = LineModel(nlp, xt, d)
 
     while !OK
-        d = Nwtdirection(nlp_at_x.Hx, nlp_at_x.gx, verbose = false)
-        # slope = BLAS.dot(n, d, 1, nlp_at_x.gx, 1)
+        d = SHaldirection(nlp, nlp_at_x, xt, Nwtdirection; kwargs...)
         slope = d' * nlp_at_x.gx
-
-        # verbose && @printf("  %8.1e", slope)
 
         h = redirect!(h, xt, d)
 
@@ -64,15 +62,11 @@ function Newton(nlp             :: AbstractNLPModel,
         xt = nlp_at_x.x + ls_at_t.x * d
         ft = obj(nlp, xt); ∇ft = grad(nlp, xt)
 
-        # BLAS.blascopy!(n, nlp_at_x.x, 1, xt, 1)
-        # BLAS.axpy!(n, ls_at_t.x, d, 1, xt, 1) #BLAS.axpy!(n, t, d, 1, xt, 1)
         ∇ft = grad!(nlp, xt, ∇ft)
 
         # Move on.
         OK = update_and_stop!(nlp_stop, x = xt, fx = ft, gx = ∇ft, Hx = hessian_rep(nlp, xt))
 
-        # norm(∇f) bug: https://github.com/JuliaLang/julia/issues/11788
-        # ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
         ∇fNorm = norm(nlp_at_x.gx)
         iter = iter + 1
 

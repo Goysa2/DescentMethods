@@ -1,4 +1,4 @@
-export Newton
+export Shamanskii
 
 """
 A globalized Newton algorithm with Line Search
@@ -13,13 +13,14 @@ Outputs:
     - An NLPAtX, so all the information of the last iterate
     - A boolean true if we reahced an optimal solution, false otherwise
 """
-function Newton(nlp             :: AbstractNLPModel,
-                 nlp_stop       :: NLPStopping;
-                 linesearch     :: Function = TR_Nwt_ls,
-                 verbose        :: Bool = false,
-                 Nwtdirection   :: Function = NwtdirectionCG,
-                 hessian_rep    :: Function = hessian_operator,
-                 kwargs...)
+function Shamanskii(nlp            :: AbstractNLPModel,
+                    nlp_stop       :: NLPStopping;
+                    linesearch     :: Function = one_step_size,
+                    verbose        :: Bool = false,
+                    Nwtdirection   :: Function = NwtdirectionCG,
+                    Shamdirection  :: Function = ShamanskiiDir,
+                    hessian_rep    :: Function = hessian_operator,
+                    kwargs...)
 
     nlp_at_x = nlp_stop.current_state
 
@@ -47,7 +48,7 @@ function Newton(nlp             :: AbstractNLPModel,
     h = LineModel(nlp, xt, d)
 
     while !OK
-        d = Nwtdirection(nlp_at_x.Hx, nlp_at_x.gx, verbose = false)
+        xp, d = Shamdirection(nlp, nlp_at_x, xt, Nwtdirection)
         # slope = BLAS.dot(n, d, 1, nlp_at_x.gx, 1)
         slope = d' * nlp_at_x.gx
 
@@ -61,7 +62,9 @@ function Newton(nlp             :: AbstractNLPModel,
         ls_at_t, good_step_size = linesearch(h, stop_ls, LS_Function_Meta())
         good_step_size || (nlp_stop.meta.stalled_linesearch = true)
 
-        xt = nlp_at_x.x + ls_at_t.x * d
+
+        xt = xp + ls_at_t.x * d
+
         ft = obj(nlp, xt); ∇ft = grad(nlp, xt)
 
         # BLAS.blascopy!(n, nlp_at_x.x, 1, xt, 1)

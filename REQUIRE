@@ -1,1 +1,13 @@
-julia 0.6
+julia 0.7
+Compat
+NLPModels
+Krylov
+CUTEst
+State
+Stopping
+LineSearch
+Printf
+LinearAlgebra
+LinearOperators
+LDLFactorizations
+SparseArrays

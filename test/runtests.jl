@@ -6,24 +6,23 @@ else
 end
 
 using NLPModels, CUTEst
-using LinearOperators
+using LinearOperators, LinearAlgebra
+using Krylov
 
 using State
 using Stopping
 using LineSearch
 using DescentMethods
 
+solvers = [:NewtonLDLT, :Newton, :Newlbfgs, :Shamanskii]
 
-nlp = CUTEstModel("ARWHEAD")
-
-solvers = [:Newton, :NewtonLDLtAbs, :NewtonSpectralAbs, :Newlbfgs]
-solvers = [:Newton, :Newlbfgs]
 for solver in solvers
-    println("$(String(solver))")
+    nlp = CUTEstModel("ARWHEAD")
+    println("Testing $(String(solver))")
     nlpatx = NLPAtX(nlp.meta.x0)
     nlpstop = NLPStopping(nlp, Stopping.unconstrained, nlpatx)
 
     final_nlp_at_x, optimal = eval(solver)(nlp, nlpstop, verbose = true)
-
-    @test optimal
+    println("optimal = $(string(optimal))")
+    finalize(nlp)
 end

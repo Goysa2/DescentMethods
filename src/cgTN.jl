@@ -6,7 +6,7 @@ using LinearOperators
 @compat abstract type KrylovStats end;
 
 "Type for statistics returned by non-Lanczos solvers"
-type SimpleStats <: KrylovStats
+mutable struct SimpleStats <: KrylovStats
   solved :: Bool
   inconsistent :: Bool
   residuals :: Array{Float64,1}
@@ -32,15 +32,10 @@ equivalent to the usual implementation. A must be symmetric to define a quadrati
 q(x) = 0.5*x'*A*x - b'*x
 
   JPD february 09 2017, Montréal"""
-# Methods for various argument types.
-#include("cg_methods.jl")
-cgTN{TA <: Number, Tb <: Number}(A :: Array{TA,2}, b :: Array{Tb,1};
-                               atol :: Float64=1.0e-8, rtol :: Float64=1.0e-6, itmax :: Int=0, verbose :: Bool=false) =
+cgTN(A::Array{TA, 2}, b::Array{Tb, 1}; atol::Float64 = 1e-08, rtol::Float64 = 1e-06, itmax::Int = 0, verbose::Bool = false) where {TA <: Number, Tb <: Number} =
   cgTN(LinearOperator(A), b, atol=atol, rtol=rtol, itmax=itmax, verbose=verbose);
 
-cgTN{TA <: Number, Tb <: Number, IA <: Integer}(A :: SparseMatrixCSC{TA,IA}, b :: Array{Tb,1};
-                                              atol :: Float64=1.0e-8, rtol ::
-                                              Float64=1.0e-6, itmax :: Int=0,  verbose :: Bool=false) =
+cgTN(A::SparseMatrixCSC{TA, IA}, b::Array{Tb, 1}; atol::Float64 = 1e-08, rtol::Float64 = 1e-06, itmax::Int = 0, verbose::Bool = false) where {TA <: Number, Tb <: Number, IA <: Integer} =
   cgTN(LinearOperator(A), b, atol=atol, rtol=rtol, itmax=itmax, verbose=verbose);
 
 
@@ -48,10 +43,7 @@ cgTN{TA <: Number, Tb <: Number, IA <: Integer}(A :: SparseMatrixCSC{TA,IA}, b :
 
 The method does _not_ abort if A is not definite.
 """
-function cgTN{T <: Real}(A :: LinearOperator, b :: Array{T,1};
-                         atol :: Float64=1.0e-8, rtol :: Float64=1.0e-6, itmax :: Int=0,
-                         verbose :: Bool=false)
-
+function cgTN(A::LinearOperator, b::Array{T, 1}; atol::Float64 = 1e-08, rtol::Float64 = 1e-06, itmax::Int = 0, verbose::Bool = false) where T <: Real
     n = size(b, 1);
     (size(A, 1) == n & size(A, 2) == n) || error("Inconsistent problem size");
     #isequal(triu(A)',tril(A)) || error("Must supply Hermitian matrix")
@@ -60,6 +52,7 @@ function cgTN{T <: Real}(A :: LinearOperator, b :: Array{T,1};
 
     # Initial state.
     x = zeros(n)
+    # x = zero(n)
     x̂ = copy(x)
 
     γ = dot(b, b);
@@ -87,7 +80,8 @@ function cgTN{T <: Real}(A :: LinearOperator, b :: Array{T,1};
     #m = s ->  q(s) + norm(s)^3/(3*regulα)
     #hO = α -> m(x+α*p)
     Ap = copy(A * p);  # Bug in LinearOperators? A side effect spoils the computation without the copy.
-    pAp = BLAS.dot(n, p, 1, Ap, 1);
+    # pAp = BLAS.dot(n, p, 1, Ap, 1);
+    pAp = p ⋅ Ap
     if pAp<=0
         neg_curv = true
         status = "gradient negative curvature"
@@ -95,8 +89,10 @@ function cgTN{T <: Real}(A :: LinearOperator, b :: Array{T,1};
         return (p, stats);
     else
         α = γ / pAp;
-        BLAS.axpy!(n,  α,  p, 1, x, 1);  # Faster than x = x + σ * p;
-        BLAS.axpy!(n, -α, Ap, 1, r, 1);  # Faster than r = r - α * Ap;
+        # BLAS.axpy!(n,  α,  p, 1, x, 1);  # Faster than x = x + σ * p;
+        @. x = x + σ * p;
+        # BLAS.axpy!(n, -α, Ap, 1, r, 1);  # Faster than r = r - α * Ap;
+        @. r = r - α * Ap;
         γ_next = BLAS.dot(n, r, 1, r, 1);
         rNorm = sqrt(γ);
         push!(rNorms, rNorm);
@@ -108,7 +104,8 @@ function cgTN{T <: Real}(A :: LinearOperator, b :: Array{T,1};
             β = γ_next / γ;
             γ = γ_next;
             BLAS.scal!(n, β, p, 1)
-            BLAS.axpy!(n, 1.0, r, 1, p, 1);  # Faster than p = r + β * p;
+            # BLAS.axpy!(n, 1.0, r, 1, p, 1);  # Faster than p = r + β * p;
+            @. p = r + β * n
         end
         iter = iter + 1;
     end
@@ -131,7 +128,9 @@ function cgTN{T <: Real}(A :: LinearOperator, b :: Array{T,1};
         else
             verbose && @printf("    %8.1e  %7.1e  %7.1e\n", pAp, α, σ);
             BLAS.axpy!(n,  α,  p, 1, x, 1);  # Faster than x = x + σ * p;
+            # @. x = x + σ * p;
             BLAS.axpy!(n, -α, Ap, 1, r, 1);  # Faster than r = r - α * Ap;
+            # @. r = r - α * Ap;
             γ_next = BLAS.dot(n, r, 1, r, 1);
             rNorm = sqrt(γ);
             push!(rNorms, rNorm);
@@ -145,6 +144,7 @@ function cgTN{T <: Real}(A :: LinearOperator, b :: Array{T,1};
             γ = γ_next;
             BLAS.scal!(n, β, p, 1)
             BLAS.axpy!(n, 1.0, r, 1, p, 1);  # Faster than p = r + β * p;
+            # @. p = r + β * p;
         end
         iter = iter + 1;
         verbose && @printf("%5d  %8.1e ", iter, rNorm);
