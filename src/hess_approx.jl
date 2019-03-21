@@ -1,5 +1,5 @@
-function hess_approx(h, LDLt, η; ϵ = sqrt(eps()))
-    n = size(LDLt.D)[1]
+function hess_approx(h, L, D, η; ϵ = sqrt(eps()))
+    n = size(D)[1]
     θ = Vector{Float64}(undef, n)
     ω = Vector{Float64}(undef, n)
     ν = Vector{Float64}(undef, n)
@@ -23,7 +23,7 @@ function hess_approx(h, LDLt, η; ϵ = sqrt(eps()))
     while (good_approx) && (j <= n)
         # println("dans le while j = $j")
         if j > 1
-            ν[j] = h[j, j] - sum(LDLt.L[j, s]^2 * ω[s] for s = 1:j-1)
+            ν[j] = h[j, j] - sum(L[j, s]^2 * ω[s] for s = 1:j-1)
         end
         # println("ν[j] = $(ν[j])")
 
@@ -33,7 +33,7 @@ function hess_approx(h, LDLt, η; ϵ = sqrt(eps()))
             # println(" maximum( abs.( h[i,j])) = $(maximum( abs.( h[i,j])))")
             if j > 1
                 # println("on est dans le if qui fait la somme")
-                sum_ljs_lis = sum(LDLt.L[j, s] * LDLt.L[i, s] * ω[s] for s=1:j-1)
+                sum_ljs_lis = sum(L[j, s] * L[i, s] * ω[s] for s=1:j-1)
                 # println("sum_ljs_lis = $sum_ljs_lis")
             else
                 # println("on est dans le if qui ne fait pas la somme")

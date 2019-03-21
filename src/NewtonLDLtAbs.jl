@@ -14,20 +14,20 @@ function NwtdirectionLDLt(H,g;verbose::Bool=false)
     ρ = Float64
     ncomp = Int64
 
-    # try
-    #     # (L, D, pp, rho, ncomp) = ldlt_symm(H,'r')
-    #     LBL = bunchkaufman(H)
-    # catch
- 	# println("*******   Problem in LDLt")
-    #     #res = PDataLDLt()
-    #     #res.OK = false
-    #     #return res
-    #     return (NaN, NaN, NaN, Inf, false, true, :fail)
-    # end
-    LBL = bunchkaufman(Symmetric(H, :L))
-    D = LBL.D
-    L = LBL.L
-    pp = LBL.p
+    try
+        (L, D, pp, rho, ncomp) = ldlt_symm(H,'p')
+        # LBL = bunchkaufman(H)
+    catch
+ 	println("*******   Problem in LDLt")
+        #res = PDataLDLt()
+        #res.OK = false
+        #return res
+        return (NaN, NaN, NaN, Inf, false, true, :fail)
+    end
+    # LBL = bunchkaufman(Symmetric(H, :L))
+    # D = LBL.D
+    # L = LBL.L
+    # pp = LBL.p
 
     # A[pp,pp] = P*A*P' =  L*D*L'
 
@@ -41,7 +41,7 @@ function NwtdirectionLDLt(H,g;verbose::Bool=false)
     end
 
     # Δ, Q = eig(D)
-    Δ, Q = eigen(SymTridiagonal(D))
+    Δ, Q = eigen(Symmetric(D))
 
     ϵ2 =  1.0e-8
     Γ = max.(abs.(Δ),ϵ2)

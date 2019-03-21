@@ -14,11 +14,11 @@ using Stopping
 using LineSearch
 using DescentMethods
 
-solvers = [:Shamanskii_LS, :NewtonLDLtAbs, :NewtonLDLT, :Newton, :Newlbfgs, :Shamanskii]
+solvers = [:NewtonLDLT, :Newton, :Newlbfgs, :Shamanskii]
 
 for solver in solvers
     nlp = CUTEstModel("ARWHEAD")
-    println("$(String(solver))")
+    println("Testing $(String(solver))")
     nlpatx = NLPAtX(nlp.meta.x0)
     nlpstop = NLPStopping(nlp, Stopping.unconstrained, nlpatx)
 

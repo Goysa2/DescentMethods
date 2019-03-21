@@ -4,7 +4,7 @@ export NwtdirectionLDLT, NewtonLDLT
 Computes the Newton direction using the LDLᵗ factorization.
 Use the factorization from LDLFactorizations (JuliaSmoothOptimizers)
 """
-function NwtdirectionLDLT(H,g;verbose::Bool=false)
+function NwtdirectionLDLT(H, g; verbose::Bool=false)
     LDLT = ldl(H)
     d = LDLT \ -g
     return d
