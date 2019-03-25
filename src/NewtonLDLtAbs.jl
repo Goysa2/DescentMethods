@@ -8,11 +8,11 @@ export NwtdirectionLDLt, NewtonLDLtAbs
 function NwtdirectionLDLt(H,g;verbose::Bool=false)
     # L = Array{Float64}(2)
     # D = Array{Float64}(2)
-    L = Array{Float64}(undef, 2)
-    D = Array{Float64}(undef, 2)
-    pp = Array{Int}(undef, 1)
-    ρ = Float64
-    ncomp = Int64
+    global L = Array{Float64}(undef, 2)
+    global D = Array{Float64}(undef, 2)
+    global pp = Array{Int}(undef, 1)
+    global ρ = Float64
+    global ncomp = Int64
 
     try
         (L, D, pp, rho, ncomp) = ldlt_symm(H,'p')

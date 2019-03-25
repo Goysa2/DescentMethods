@@ -51,18 +51,18 @@ function  ldlt_symm(A0 :: Array{Float64,2}, piv :: Char='r')
     k = 1
     # D = eye(n,n);
     # L = eye(n,n);
-    D = Matrix(1.0I, n, n);
-    L = Matrix(1.0I, n, n);
+    global D = Matrix(1.0I, n, n);
+    global L = Matrix(1.0I, n, n);
 
     if n == 1   D = A; end
 
-    pp = collect(1:n)
+    global pp = collect(1:n)
 
     maxA = norm(A, Inf)
-    ρ = maxA;
+    global ρ = maxA;
 
-    ncomp = 0;
-    s=1
+    global ncomp = 0;
+    s = 1
 
     α = (1 + sqrt(17))/8
     while k < n
