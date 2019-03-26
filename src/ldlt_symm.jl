@@ -165,7 +165,7 @@ function  ldlt_symm(A0 :: Array{Float64,2}, piv :: Char='r')
 
             if  k+s <= n
                 val, = findmax(abs.(A[k+s:n,k+s:n]))
-                ρ = max(ρ, val );
+                global ρ = max(ρ, val );
             end
 
         else  # Nothing to do.
