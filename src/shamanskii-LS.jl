@@ -98,7 +98,6 @@ function Shamanskii_LS(nlp            :: AbstractNLPModel,
 
             # println("i = $i and p = $p")
             if (k == i * p)
-                # printstyled("on augmente i = $i \n", color = :green)
                 i += 1
             end
         end # if (k == i * p) || (u == 1)
