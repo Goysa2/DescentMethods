@@ -1,10 +1,9 @@
-export ldlt_symm
 """
 Higams' ldlt_symm translated from matlab. Performs  a so called
  BKK  Bounded Bunch Kaufman factorization of A0, that means
  ||L|| is bounded and bounded away from zero.
 """
-function  ldlt_symm(A0 :: Array{Float64,2}, piv :: Char='r')
+function  ldlt_symm(A0 :: Array{T,2}, piv :: Char='r') where T
 
     #LDLT_SYMM  Block LDL^T factorization for a symmetric indefinite matrix.
     #     Given a Hermitian matrix A,
@@ -41,19 +40,19 @@ function  ldlt_symm(A0 :: Array{Float64,2}, piv :: Char='r')
     # scope of the function
 
     A = copy(A0)
+    # printstyled("dans ldlt_symm eltype(A) = $(eltype(A)) \n", color = :cyan)
 
     # minimal checks for conforming inputs
     isequal(triu(A)',tril(A)) || error("Must supply Hermitian matrix.")
-    piv in ['p','r'] || error("Pivoting must be 'p' or 'r'.")
+    piv in ['p','r'] || error("Pivoting must be \"'p'\" or \" 'r' \".")
 
     n, = size(A)
 
     k = 1
     # D = eye(n,n);
     # L = eye(n,n);
-    global D = Matrix(1.0I, n, n);
-    global L = Matrix(1.0I, n, n);
-
+    global D = Matrix{T}(1.0I, n, n);
+    global L = Matrix{T}(1.0I, n, n);
     if n == 1   D = A; end
 
     global pp = collect(1:n)
@@ -64,21 +63,21 @@ function  ldlt_symm(A0 :: Array{Float64,2}, piv :: Char='r')
     global ncomp = 0;
     s = 1
 
-    α = (1 + sqrt(17))/8
+    α = T((1 + sqrt(17))/8)
     while k < n
         (λ, vr) = findmax( abs.(A[k+1:n,k]) );
         r = vr[1] + k;
         if λ > 0
             swap = false;
-            if abs(A[k,k]) >= α*λ
+            if abs.(A[k,k]) >= α*λ
                 s = 1;
             else
                 if piv == 'p'
                     temp = A[k:n,r]; temp[r-k+1] = 0
                     σ = norm(temp, Inf)
-                    if α*λ^2 <= abs(A[k,k])*σ
+                    if α*λ^2 <= abs.(A[k,k])*σ
                         s = 1;
-                    elseif abs(A[r,r]) >= α*σ
+                    elseif abs.(A[r,r]) >= α*σ
                         swap = true;
                         m1 = k; m2 = r;
                         s = 1;
@@ -101,12 +100,12 @@ function  ldlt_symm(A0 :: Array{Float64,2}, piv :: Char='r')
                     λ_j = λ;
                     while ~pivot
                         (temp1,vr) = findmax( abs.(A[k:n,j]) );
-                        ncomp = ncomp + n-k;
+                        global ncomp = ncomp + n-k;
                         r = vr[1] + k - 1;
                         temp = A[k:n,r]; temp[r-k+1] = 0.0;
                         λᵣ = max(maximum(temp), -minimum(temp))
-                        ncomp = ncomp + n-k;
-                        if α*λᵣ <= abs(A[r,r])
+                        global ncomp = ncomp + n-k;
+                        if α*λᵣ <= abs.(A[r,r])
                             pivot = true;
                             s = 1;
                             A[k,:], A[r,:] = A[r,:], A[k,:]
@@ -183,5 +182,8 @@ function  ldlt_symm(A0 :: Array{Float64,2}, piv :: Char='r')
     end
     #P=eye(n)
     #P = P[pp,:]
+    # printstyled("a la fin de ldlt_symm eltype(L) = $(eltype(L))\n", color = :blue)
+    # @show L
+    # @show D
     return L, D, pp, ρ, ncomp
 end

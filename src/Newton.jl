@@ -25,7 +25,6 @@ function Newton(nlp             :: AbstractNLPModel,
 
     n = nlp.meta.nvar
 
-    # xt = Array{Float64}(n)
     xt = copy(nlp.meta.x0)
     ∇ft = Array{Float64}(undef, n)
 
@@ -35,6 +34,7 @@ function Newton(nlp             :: AbstractNLPModel,
     # ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
     ∇fNorm = norm(nlp_at_x.gx)
     !OK && update!(nlp_at_x, Hx = hessian_rep(nlp, xt))
+
 
     iter = 0
 
@@ -48,6 +48,7 @@ function Newton(nlp             :: AbstractNLPModel,
 
     while !OK
         d = Nwtdirection(nlp_at_x.Hx, nlp_at_x.gx, verbose = false)
+
         # slope = BLAS.dot(n, d, 1, nlp_at_x.gx, 1)
         slope = d' * nlp_at_x.gx
 
