@@ -42,17 +42,16 @@ function NwtdirectionLDLT(H, g; verbose :: Bool = false)
         return d
     end
 
+
    X = eigen(D)
    Δ = X.values
    Q =  X.vectors
-   ϵ2 =  1.0e-8
-
+   ϵ2 = sqrt(eps(T))
    Γ = max.(abs.(Δ), ϵ2)
 
     # Ad = P' * L * Q * Δ * Q' * L' *P d = -g
     # replace Δ by Γ to ensure positive definiteness
    d̃ = L \ g[pp]
-   dtemp = -(Q' * d̃ ./ Γ)
    d̂ = L' \ (Q * (Q' * d̃ ./ Γ))
    d = -d̂[invperm(pp)]
 
