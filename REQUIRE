@@ -2,7 +2,6 @@ julia 0.7
 Compat
 NLPModels
 Krylov
-CUTEst
 State
 Stopping
 LineSearch
