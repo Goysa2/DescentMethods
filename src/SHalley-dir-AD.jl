@@ -20,8 +20,6 @@ function SHalley_dir_AD(nlp            :: AbstractNLPModel,
 
     hess_plus_tenseur = (nlp_at_x.Hx + ∇³fdₙ)
 
-    ∇³fdₙdₙ = ∇f³xuv(nlp, x, dₙ, dₙ)
-
     dV = Nwtdirection(hess_plus_tenseur, nlp_at_x.gx)
 
     grad_plus_tuv = -(nlp_at_x.gx + 0.5 .* ∇f³xuv(nlp, x, dₙ, dV))
