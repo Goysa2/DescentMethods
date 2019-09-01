@@ -59,7 +59,7 @@ function Shamanskii(nlp            :: AbstractNLPModel,
         ls_at_t = LSAtT(0.0, h₀ = nlp_at_x.fx, g₀ = slope)
         stop_ls = LS_Stopping(h, (x, y) -> armijo(x, y, τ₀ = 1e-09), ls_at_t)
         verbose && println(" ")
-        ls_at_t, good_step_size = linesearch(h, stop_ls, LS_Function_Meta())
+        ls_at_t, good_step_size = linesearch(h, stop_ls; kwargs...)
         good_step_size || (nlp_stop.meta.stalled_linesearch = true)
 
 
@@ -85,5 +85,5 @@ function Shamanskii(nlp            :: AbstractNLPModel,
 
     verbose && @printf("\n")
 
-    return nlp_at_x, nlp_stop.meta.optimal
+    return nlp_stop, nlp_stop.meta.optimal
 end
