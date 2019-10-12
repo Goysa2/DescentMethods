@@ -54,7 +54,6 @@ function NwtdirectionLDLT(H, g; verbose :: Bool = false)
    d̃ = L \ g[pp]
    d̂ = L' \ (Q * (Q' * d̃ ./ Γ))
    d = -d̂[invperm(pp)]
-
    return d
 end
 

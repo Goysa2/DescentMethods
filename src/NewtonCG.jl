@@ -17,3 +17,17 @@ function NwtdirectionCG(H, ∇f; verbose :: Bool = false)
 
     return d
 end
+
+function NewtonCG(nlp          :: AbstractNLPModel,
+                       nlp_stop     :: NLPStopping;
+                       verbose      :: Bool=false,
+                       verboseLS    :: Bool = false,
+                       kwargs...)
+    return  Newton(nlp,
+                   nlp_stop;
+                   verbose = verbose,
+                   verboseLS = verboseLS,
+                   Nwtdirection = NwtdirectionCG,
+                   hessian_rep = hessian_operator,
+                   kwargs...)
+end

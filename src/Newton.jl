@@ -48,7 +48,6 @@ function Newton(nlp             :: AbstractNLPModel,
 
     while !OK
         d = Nwtdirection(nlp_at_x.Hx, nlp_at_x.gx, verbose = false)
-
         # slope = BLAS.dot(n, d, 1, nlp_at_x.gx, 1)
         slope = d' * nlp_at_x.gx
 
@@ -60,7 +59,7 @@ function Newton(nlp             :: AbstractNLPModel,
         stop_ls = LS_Stopping(h, (x, y) -> armijo(x, y, τ₀ = 1e-09), ls_at_t)
         verbose && println(" ")
         ls_at_t, good_step_size = linesearch(h, stop_ls; kwargs...)
-        good_step_size || (nlp_stop.meta.stalled_linesearch = true)
+        # good_step_size || (nlp_stop.meta.stalled_linesearch = true)
 
         xt = nlp_at_x.x + ls_at_t.x * d
         ft = obj(nlp, xt); ∇ft = grad(nlp, xt)
