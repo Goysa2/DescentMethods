@@ -10,3 +10,5 @@ LinearAlgebra
 LinearOperators
 LDLFactorizations
 SparseArrays
+SolverTools
+Logging

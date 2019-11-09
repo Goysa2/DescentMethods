@@ -8,6 +8,7 @@ using LinearOperators
 using Krylov
 using LDLFactorizations
 using SparseArrays
+using SolverTools, Logging
 
 include("HessianDense.jl")
 include("HessianOp.jl")
