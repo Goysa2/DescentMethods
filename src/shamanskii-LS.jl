@@ -14,7 +14,7 @@ Vol. 111, No. 2, pp. 341–358, November 2001
 """
 function Shamanskii_LS(nlp          :: AbstractNLPModel,
                  	   nlp_stop     :: NLPStopping;
-                 	   linesearch   :: Function = armijo_ls,
+                 	   linesearch   :: Function = shamanskii_line_search,
                  	   Nwtdirection :: Function = NwtdirectionLDLT_LS,
                  	   hessian_rep  :: Function = hessian_dense,
 					   η 		    :: Float64 = 1.5,
@@ -40,6 +40,15 @@ function Shamanskii_LS(nlp          :: AbstractNLPModel,
 	global i = 0
 	global fm1 = nothing
 
+	global L = Matrix{T}(undef, n, n)
+	global D = Matrix{T}(undef, n, n)
+	global pp = Vector{Int}(undef, n)
+	global ρ = nothing
+	global ncomp = nothing
+	global Q = nothing
+	global Γ = nothing
+	global ϵ2 = nothing
+
     @info log_header([:iter, :f, :nrm_g, :α], [Int64, T, T, T])
 	@info log_row(Any[iter, nlp_at_x.fx, ∇fNorm, 0.0])
 
@@ -48,8 +57,59 @@ function Shamanskii_LS(nlp          :: AbstractNLPModel,
     h = LineSearch.LineModel(nlp, xt, d)
 
     while !OK
-        d, u = Nwtdirection(Hhat, nlp_at_x.gx)
-		@show u
+		# @show nlp_at_x.x
+		# @show nlp_at_x.gx
+		# @show nlp_at_x.Hx
+		# @show iter
+		# @show i
+		# @show p
+		# @show i * p
+		# @show u
+		# @show (iter == i * p)
+		# @show !(iter == i * p)
+		# @show (u == 0)
+		if !(iter == i * p) && (u == 0)
+			println("we do nothing")
+		else
+			println("we do something")
+			(L, D, pp, ρ, ncomp) = ldlt_symm(hessian_rep(nlp, xt), 'r')
+			X = eigen(D)
+			Δ = X.values
+			Q =  X.vectors
+			ϵ2 = sqrt(eps(T))
+			Γ = max.(abs.(Δ), ϵ2)
+			# @show Γ
+			# @show Γ .== ϵ2
+			if (true in (Δ .< ϵ2))
+			   # too_diff = true
+			   u = 1
+			else
+			   # too_diff = false
+			   u = 0
+			end
+			# @show u
+			if (iter == i * p)
+				i += 1
+			end
+		end
+		# @show L
+		# @show D
+		# @show Q
+		# @show pp
+		# @show Γ
+		# @show ϵ2
+		# @show u
+        # d, u = Nwtdirection(Hhat, nlp_at_x.gx)
+		g = copy(nlp_at_x.gx)
+		# @show eltype(g)
+		d̃ = L \ g[pp]
+		# @show eltype(d̃)
+		d̂ = L' \ (Q * (Q' * d̃ ./ Γ))
+		# @show eltype(d̂)
+		d = -d̂[invperm(pp)]
+		# @show eltype(d)
+
+		# @show u
         slope = d' * nlp_at_x.gx
 
         h = LineSearch.redirect!(h, xt, d)
@@ -62,28 +122,25 @@ function Shamanskii_LS(nlp          :: AbstractNLPModel,
         ft  = obj(nlp, xt); ∇ft = grad(nlp, xt)
 
         ∇ft = grad!(nlp, xt, ∇ft)
+		# @show eltype(∇ft)
+		# @show eltype(xt)
+		# @show eltype(ft)
 		OK = update_and_stop!(nlp_stop, x = xt, fx = ft, gx = ∇ft)
 
-		# if (ls_at_t.x >= ca) || (((ft - fm1)/ft) >= cf)
-		# 	u = 0
-		# end
+		# @show ls_at_t.x
+		# @show ca
+		# @show fm1
+		# @show ft
+		# @show cf * abs(ft) + fm1
+		# @show cf * abs(ft) + fm1 < ft
 
-        # Move on.
-		@show iter
-		@show i * p
-		@show u
-		@show (iter == i * p)
-		@show !(iter == i * p)
-		if !(iter == i * p) && (u == 0)
-			println("we do nothing")
+		if (fm1 < ft)
+			u = 1
 		else
-			println("we do something")
-			Hhat = copy(hessian_rep(nlp, xt))
-			if (iter == i * p)
-				i += 1
-			end
+			u = 0
 		end
 
+        # Move on.
         ∇fNorm = norm(nlp_at_x.gx)
         iter = iter + 1
 

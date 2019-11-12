@@ -96,7 +96,9 @@ function NwtdirectionLDLT_LS(H, g; verbose :: Bool = false)
    Q =  X.vectors
    ϵ2 = sqrt(eps(T))
    Γ = max.(abs.(Δ), ϵ2)
-   if Γ != ϵ2
+   @show Γ
+   @show Γ .== ϵ2
+   if (true in (Γ .== ϵ2))
       # too_diff = true
       u = 1
    else
