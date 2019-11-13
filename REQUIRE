@@ -5,6 +5,7 @@ Krylov
 State
 Stopping
 LineSearch
+HSL
 Printf
 LinearAlgebra
 LinearOperators

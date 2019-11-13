@@ -6,6 +6,7 @@ using State, Stopping, LineSearch
 using LinearAlgebra
 using LinearOperators
 using Krylov
+using HSL
 using LDLFactorizations
 using SparseArrays
 using SolverTools, Logging
@@ -28,6 +29,7 @@ include("CG_HZ.jl")
 
 include("hess_approx.jl")
 include("shamanskii-LS.jl")
+include("shamanskii-LS-MA57.jl")
 
 include("Cheb-dir-AD.jl")
 include("Chebyshev.jl")

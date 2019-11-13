@@ -28,7 +28,8 @@ function Newton(nlp             :: AbstractNLPModel,
 
     f = obj(nlp, xt)
     ∇f = grad(nlp, xt)
-    OK = update_and_start!(nlp_stop, x = xt, fx = f, gx = ∇f, g0 = ∇f)
+	nlp_stop.meta.optimality0 = norm(copy(∇f))
+    OK = update_and_start!(nlp_stop, x = xt, fx = f, gx = ∇f)#, g0 = ∇f)
     # ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
     ∇fNorm = norm(nlp_at_x.gx)
     !OK && State.update!(nlp_at_x, Hx = hessian_rep(nlp, xt))
