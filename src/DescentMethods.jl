@@ -2,7 +2,7 @@ module DescentMethods
 
 using Compat, Printf
 using NLPModels
-using State, Stopping, LineSearch
+using Stopping, LineSearch
 using LinearAlgebra
 using LinearOperators
 using Krylov
@@ -47,5 +47,8 @@ include("lbfgs.jl")
 
 include("ShamanskiiDir.jl")
 include("shamanskii-m.jl")
+
+include("autodiff_high_order_model.jl")
+
 
 end # module

@@ -9,7 +9,6 @@ using NLPModels
 using LinearOperators, LinearAlgebra
 using Krylov
 
-using State
 using Stopping
 using LineSearch
 using DescentMethods

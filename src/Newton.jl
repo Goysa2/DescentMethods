@@ -32,7 +32,7 @@ function Newton(nlp             :: AbstractNLPModel,
     OK = update_and_start!(nlp_stop, x = xt, fx = f, gx = ∇f)#, g0 = ∇f)
     # ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
     ∇fNorm = norm(nlp_at_x.gx)
-    !OK && State.update!(nlp_at_x, Hx = hessian_rep(nlp, xt))
+    !OK && Stopping.update!(nlp_at_x, Hx = hessian_rep(nlp, xt))
 
     iter = 0
 
@@ -70,7 +70,8 @@ function Newton(nlp             :: AbstractNLPModel,
         # ∇fNorm = BLAS.nrm2(n, nlp_at_x.gx, 1)
         ∇fNorm = norm(nlp_at_x.gx)
         iter = iter + 1
-
+		@show nlp_at_x.x[1]
+		@show nlp_at_x.x[2]
 		@info log_row(Any[iter, nlp_at_x.fx, ∇fNorm, ls_at_t.x])
     end
 
